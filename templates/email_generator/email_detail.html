@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ email.subject }} - Sales Communication Assistant{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'email_list' %}">Generated Emails</a></li>
+<li class="breadcrumb-item active" aria-current="page">Email Details</li>
+{% endblock %}
+
+{% block page_title %}Email Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group" role="group">
+    <button class="btn btn-outline-primary" id="copyEmailBtn">
+        <i class="fas fa-copy"></i> Copy Email
+    </button>
+    <a href="#" class="btn btn-outline-secondary">
+        <i class="fas fa-code-branch"></i> Create Variant
+    </a>
+    <a href="#" class="btn btn-outline-info">
+        <i class="fas fa-flask"></i> Add to A/B Test
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Email Content</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Subject</label>
+                    <div class="form-control bg-light">{{ email.subject }}</div>
+                </div>
+                <div>
+                    <label class="form-label fw-bold">Body</label>
+                    <div class="form-control bg-light" id="emailBody" style="min-height: 300px; white-space: pre-wrap;">{{ email.body }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if variants %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Variants</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Tone</th>
+                                <th>Date</th>
+                                <th>Score</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for variant in variants %}
+                            <tr>
+                                <td><a href="{% url 'email_detail' variant.id %}">{{ variant.subject|truncatechars:30 }}</a></td>
+                                <td><span class="badge bg-secondary">{{ variant.get_tone_display }}</span></td>
+                                <td>{{ variant.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if hasattr variant 'analysis' %}
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar 
+                                            {% if variant.analysis.overall_score >= 80 %}
+                                                bg-success
+                                            {% elif variant.analysis.overall_score >= 60 %}
+                                                bg-info
+                                            {% elif variant.analysis.overall_score >= 40 %}
+                                                bg-warning
+                                            {% else %}
+                                                bg-danger
+                                            {% endif %}" 
+                                            role="progressbar" style="width: {{ variant.analysis.overall_score }}%"
+                                            aria-valuenow="{{ variant.analysis.overall_score }}" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ variant.analysis.overall_score|floatformat }}</small>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'email_detail' variant.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Email Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Tone:</strong> {{ email.get_tone_display }}</p>
+                <p><strong>Created:</strong> {{ email.created_at|date:"F d, Y" }}</p>
+                <p><strong>Length:</strong> {{ email.target_length|title }}</p>
+                
+                {% if email.call_recording %}
+                <p>
+                    <strong>Based on call:</strong> 
+                    <a href="{% url 'call_detail' email.call_recording.id %}">{{ email.call_recording.title }}</a>
+                </p>
+                {% endif %}
+                
+                {% if email.template %}
+                <p>
+                    <strong>Using template:</strong> 
+                    <a href="{% url 'template_detail' email.template.id %}">{{ email.template.name }}</a>
+                </p>
+                {% endif %}
+                
+                {% if email.parent %}
+                <p>
+                    <strong>Variation of:</strong> 
+                    <a href="{% url 'email_detail' email.parent.id %}">{{ email.parent.subject|truncatechars:30 }}</a>
+                </p>
+                {% endif %}
+                
+                <p><strong>Version:</strong> {{ email.version }}</p>
+            </div>
+        </div>
+        
+        {% if analysis %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Email Analysis</h5>
+                <span class="badge {% if analysis.overall_score >= 80 %}bg-success{% elif analysis.overall_score >= 60 %}bg-info{% elif analysis.overall_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                    {{ analysis.overall_score|floatformat }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h6>Quality Scores</h6>
+                <div class="mb-3">
+                    <label class="d-flex justify-content-between">
+                        <span>Readability:</span>
+                        <span>{{ analysis.readability_score|floatformat:1 }}/100</span>
+                    </label>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ analysis.readability_score }}%" 
+                             aria-valuenow="{{ analysis.readability_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="d-flex justify-content-between">
+                        <span>Spam Score:</span>
+                        <span>{{ analysis.spam_score|floatformat:1 }}/100</span>
+                    </label>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ analysis.spam_score }}%" 
+                             aria-valuenow="{{ analysis.spam_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="d-flex justify-content-between">
+                        <span>Engagement:</span>
+                        <span>{{ analysis.engagement_score|floatformat:1 }}/100</span>
+                    </label>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ analysis.engagement_score }}%" 
+                             aria-valuenow="{{ analysis.engagement_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                
+                <h6>Statistics</h6>
+                <p class="mb-1"><small><strong>Word count:</strong> {{ analysis.word_count }}</small></p>
+                <p class="mb-1"><small><strong>Avg. sentence length:</strong> {{ analysis.avg_sentence_length|floatformat:1 }} words</small></p>
+                <p><small><strong>Complexity score:</strong> {{ analysis.complexity_score|floatformat:1 }}</small></p>
+                
+                {% if analysis.strengths %}
+                <h6 class="mt-3">Strengths</h6>
+                <ul class="list-group list-group-flush">
+                    {% for strength in analysis.strengths %}
+                    <li class="list-group-item px-0 py-1 border-0">
+                        <small><i class="fas fa-check-circle text-success"></i> {{ strength }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                {% if analysis.weaknesses %}
+                <h6 class="mt-3">Weaknesses</h6>
+                <ul class="list-group list-group-flush">
+                    {% for weakness in analysis.weaknesses %}
+                    <li class="list-group-item px-0 py-1 border-0">
+                        <small><i class="fas fa-exclamation-circle text-warning"></i> {{ weakness }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                
+                {% if analysis.suggestions %}
+                <h6 class="mt-3">Suggestions</h6>
+                <ul class="list-group list-group-flush">
+                    {% for suggestion in analysis.suggestions %}
+                    <li class="list-group-item px-0 py-1 border-0">
+                        <small><i class="fas fa-lightbulb text-primary"></i> {{ suggestion }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card mb-4">
+            <div class="card-body text-center py-4">
+                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                <h5>Analysis Pending</h5>
+                <p class="text-muted">Email analysis is currently being processed.</p>
+                <form action="{% url 'analyze_email' email.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-sync"></i> Analyze Now
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('copyEmailBtn').addEventListener('click', function() {
+        const subject = "{{ email.subject }}";
+        const body = document.getElementById('emailBody').textContent;
+        
+        const fullEmail = `Subject: ${subject}\n\n${body}`;
+        
+        navigator.clipboard.writeText(fullEmail)
+            .then(() => {
+                alert('Email copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+    });
+</script>
+{% endblock %}

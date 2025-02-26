@@ -1,0 +1,38 @@
+# Core
+Django==4.2.7
+djongo==1.3.6           # MongoDB connector for Django
+pymongo==3.12.3         # MongoDB Python driver
+python-dotenv==1.0.0    # Environment variable management
+
+# Async tasks
+celery==5.3.4           # Task queue
+redis==5.0.1            # Broker for Celery
+
+# API
+djangorestframework==3.14.0
+django-cors-headers==4.3.0
+
+# AI and NLP
+openai-whisper==20231117    # For audio transcription
+nltk==3.8.1                 # Natural Language Processing
+textblob==0.17.1            # Sentiment analysis
+huggingface-hub==0.19.4     # For accessing open-source LLMs
+transformers==4.35.2        # Transformer models
+sentencepiece==0.1.99       # For text tokenization
+accelerate==0.24.1          # For optimized model inference
+spacy==3.7.2                # For NLP tasks
+scikit-learn==1.3.2         # For machine learning components
+
+# Spam detection
+spamassassin==3.4.6         # Spam detection library
+
+# Visualization
+matplotlib==3.8.2           # Basic plotting
+plotly==5.18.0              # Interactive visualizations
+dash==2.14.2                # Dashboard framework
+
+# Utils
+pandas==2.1.3               # Data manipulation
+pydub==0.25.1               # Audio file manipulation
+python-magic==0.4.27        # File type detection
+tqdm==4.66.1                # Progress bars

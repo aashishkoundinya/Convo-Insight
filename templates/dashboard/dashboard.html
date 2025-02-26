@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sales Communication Assistant{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+<li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Quick Stats -->
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Calls</h6>
+                        <h2 class="mb-0">{{ stats.total_calls }}</h2>
+                    </div>
+                    <i class="fas fa-phone-alt fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Generated Emails</h6>
+                        <h2 class="mb-0">{{ stats.total_emails }}</h2>
+                    </div>
+                    <i class="fas fa-envelope fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Avg. Performance</h6>
+                        <h2 class="mb-0">{{ stats.avg_performance|floatformat:1 }}</h2>
+                    </div>
+                    <i class="fas fa-chart-line fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Active A/B Tests</h6>
+                        <h2 class="mb-0">{{ stats.active_tests }}</h2>
+                    </div>
+                    <i class="fas fa-flask fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calls Chart -->
+    <div class="col-md-6 mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Call Sentiment Analysis</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="sentimentChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Email Performance Chart -->
+    <div class="col-md-6 mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Email Performance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="emailPerformanceChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Calls -->
+    <div class="col-md-6 mt-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Recent Calls</h5>
+                <a href="{% url 'call_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Sentiment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for call in recent_calls %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'call_detail' call.id %}">{{ call.title }}</a>
+                                </td>
+                                <td>{{ call.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if call.status == 'processed' %}
+                                    <span class="badge bg-success">Processed</span>
+                                    {% elif call.status == 'processing' %}
+                                    <span class="badge bg-warning">Processing</span>
+                                    {% elif call.status == 'failed' %}
+                                    <span class="badge bg-danger">Failed</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if call.sentiment %}
+                                        {% if call.sentiment.overall_sentiment == 'positive' %}
+                                        <span class="text-success"><i class="fas fa-smile"></i> Positive</span>
+                                        {% elif call.sentiment.overall_sentiment == 'negative' %}
+                                        <span class="text-danger"><i class="fas fa-frown"></i> Negative</span>
+                                        {% else %}
+                                        <span class="text-secondary"><i class="fas fa-meh"></i> Neutral</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No calls found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Emails -->
+    <div class="col-md-6 mt-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Recent Generated Emails</h5>
+                <a href="{% url 'email_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Tone</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for email in recent_emails %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'email_detail' email.id %}">{{ email.subject|truncatechars:30 }}</a>
+                                </td>
+                                <td>{{ email.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ email.get_tone_display }}</span>
+                                </td>
+                                <td>
+                                    {% if email.analysis %}
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar 
+                                            {% if email.analysis.overall_score >= 80 %}
+                                                bg-success
+                                            {% elif email.analysis.overall_score >= 60 %}
+                                                bg-info
+                                            {% elif email.analysis.overall_score >= 40 %}
+                                                bg-warning
+                                            {% else %}
+                                                bg-danger
+                                            {% endif %}" 
+                                            role="progressbar" style="width: {{ email.analysis.overall_score }}%"
+                                            aria-valuenow="{{ email.analysis.overall_score }}" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ email.analysis.overall_score|floatformat }}</small>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No emails found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Sentiment Chart
+    const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+    const sentimentChart = new Chart(sentimentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                data: [
+                    {{ sentiment_data.positive }}, 
+                    {{ sentiment_data.neutral }}, 
+                    {{ sentiment_data.negative }}
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.7)',
+                    'rgba(108, 117, 125, 0.7)',
+                    'rgba(220, 53, 69, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(108, 117, 125, 1)',
+                    'rgba(220, 53, 69, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+    
+    // Email Performance Chart
+    const emailCtx = document.getElementById('emailPerformanceChart').getContext('2d');
+    const emailChart = new Chart(emailCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Readability', 'Spam Score', 'Engagement'],
+            datasets: [{
+                label: 'Average Score',
+                data: [
+                    {{ email_performance.avg_readability }},
+                    {{ email_performance.avg_spam_score }},
+                    {{ email_performance.avg_engagement }}
+                ],
+                backgroundColor: [
+                    'rgba(2, 117, 216, 0.7)',
+                    'rgba(240, 173, 78, 0.7)',
+                    'rgba(92, 184, 92, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(2, 117, 216, 1)',
+                    'rgba(240, 173, 78, 1)',
+                    'rgba(92, 184, 92, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

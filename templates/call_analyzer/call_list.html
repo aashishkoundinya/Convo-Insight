@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Call Recordings - Sales Communication Assistant{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+<li class="breadcrumb-item active" aria-current="page">Call Recordings</li>
+{% endblock %}
+
+{% block page_title %}Call Recordings{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'call_upload' %}" class="btn btn-primary">
+    <i class="fas fa-upload"></i> Upload Call
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Sentiment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for call in calls %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'call_detail' call.id %}">{{ call.title }}</a>
+                        </td>
+                        <td>{{ call.created_at|date:"M d, Y" }}</td>
+                        <td>{{ call.duration|default:"--" }}</td>
+                        <td>
+                            {% if call.status == 'processed' %}
+                            <span class="badge bg-success">Processed</span>
+                            {% elif call.status == 'processing' %}
+                            <span class="badge bg-warning">Processing</span>
+                            {% elif call.status == 'failed' %}
+                            <span class="badge bg-danger">Failed</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if hasattr call 'sentiment' %}
+                                {% if call.sentiment.overall_sentiment == 'positive' %}
+                                <span class="text-success"><i class="fas fa-smile"></i> Positive</span>
+                                {% elif call.sentiment.overall_sentiment == 'negative' %}
+                                <span class="text-danger"><i class="fas fa-frown"></i> Negative</span>
+                                {% else %}
+                                <span class="text-secondary"><i class="fas fa-meh"></i> Neutral</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton{{ call.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Actions
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ call.id }}">
+                                    <li><a class="dropdown-item" href="{% url 'call_detail' call.id %}">View Details</a></li>
+                                    {% if call.status == 'processed' %}
+                                    <li><a class="dropdown-item" href="#">Generate Email</a></li>
+                                    {% elif call.status == 'failed' %}
+                                    <li>
+                                        <form action="{% url 'process_call' call.id %}" method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">Retry Processing</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="empty-state">
+                                <i class="fas fa-phone-alt fa-3x mb-3 text-muted"></i>
+                                <h4>No call recordings found</h4>
+                                <p class="text-muted">Upload your first call recording to get started.</p>
+                                <a href="{% url 'call_upload' %}" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Upload Call
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

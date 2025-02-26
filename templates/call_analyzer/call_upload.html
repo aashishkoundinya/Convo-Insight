@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Call Recording - Sales Communication Assistant{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'call_list' %}">Call Recordings</a></li>
+<li class="breadcrumb-item active" aria-current="page">Upload Call</li>
+{% endblock %}
+
+{% block page_title %}Upload Call Recording{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" name="title" placeholder="Call with Client XYZ">
+                <small class="form-text text-muted">If left blank, the filename will be used.</small>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Description (Optional)</label>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief description of the call..."></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="call_date" class="form-label">Call Date (Optional)</label>
+                <input type="date" class="form-control" id="call_date" name="call_date">
+                <small class="form-text text-muted">If left blank, today's date will be used.</small>
+            </div>
+            
+            <div class="mb-3">
+                <label for="customer_name" class="form-label">Customer Name (Optional)</label>
+                <input type="text" class="form-control" id="customer_name" name="customer_name">
+            </div>
+            
+            <div class="mb-3">
+                <label for="customer_company" class="form-label">Customer Company (Optional)</label>
+                <input type="text" class="form-control" id="customer_company" name="customer_company">
+            </div>
+            
+            <div class="mb-3">
+                <label for="call_type" class="form-label">Call Type (Optional)</label>
+                <select class="form-select" id="call_type" name="call_type">
+                    <option value="">Select call type</option>
+                    <option value="discovery">Discovery Call</option>
+                    <option value="demo">Product Demo</option>
+                    <option value="follow_up">Follow-up</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="closing">Closing Call</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label for="file" class="form-label">Audio File</label>
+                <input class="form-control" type="file" id="file" name="file" accept="audio/*" required>
+                <small class="form-text text-muted">
+                    Supported formats: WAV, MP3, OGG. Maximum file size: {{ max_file_size_mb }}MB
+                </small>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                After uploading, your call will be processed automatically. This may take a few minutes depending on the file size.
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'call_list' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Call
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
