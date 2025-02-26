@@ -81,6 +81,17 @@ DATABASES = {
     }
 }
 
+mongo_user = os.getenv('MONGO_USERNAME')
+mongo_pass = os.getenv('MONGO_PASSWORD')
+
+if mongo_user and mongo_pass:
+    DATABASES['default']['CLIENT'].update({
+        'username': mongo_user,
+        'password': mongo_pass,
+    })
+
+LOGIN_URL = '/login/'
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

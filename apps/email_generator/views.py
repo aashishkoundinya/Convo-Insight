@@ -335,3 +335,144 @@ class ABTestViewSet(viewsets.ModelViewSet):
             })
         
         return Response(results)
+
+
+# Template Views for web interface
+
+@login_required
+def email_list(request):
+    """
+    View to display the list of generated emails.
+    """
+    user = request.user
+    
+    # Get emails based on user role
+    if user.is_staff and hasattr(user, 'profile') and user.profile.organization:
+        emails = GeneratedEmail.objects.filter(organization=user.profile.organization).order_by('-created_at')
+    else:
+        emails = GeneratedEmail.objects.filter(user=user).order_by('-created_at')
+    
+    context = {
+        'emails': emails
+    }
+    
+    return render(request, 'email_generator/email_list.html', context)
+
+
+@login_required
+def email_detail(request, pk):
+    """
+    View to display the details of a generated email.
+    """
+    email = get_object_or_404(GeneratedEmail, pk=pk)
+    
+    # Check permission
+    if not request.user.is_staff and email.user != request.user:
+        messages.error(request, "You do not have permission to view this email.")
+        return redirect('email_list')
+    
+    # Get analysis if available
+    try:
+        analysis = email.analysis
+    except:
+        analysis = None
+    
+    # Get variants if available
+    variants = email.variations.all()
+    
+    context = {
+        'email': email,
+        'analysis': analysis,
+        'variants': variants
+    }
+    
+    return render(request, 'email_generator/email_detail.html', context)
+
+
+@login_required
+def template_list(request):
+    """
+    View to display the list of email templates.
+    """
+    user = request.user
+    
+    # Get templates based on user role
+    if user.is_staff and hasattr(user, 'profile') and user.profile.organization:
+        templates = EmailTemplate.objects.filter(
+            models.Q(user=user) | 
+            models.Q(organization=user.profile.organization, is_public=True)
+        ).order_by('-created_at')
+    else:
+        templates = EmailTemplate.objects.filter(user=user).order_by('-created_at')
+    
+    context = {
+        'templates': templates
+    }
+    
+    return render(request, 'email_generator/template_list.html', context)
+
+
+@login_required
+def template_detail(request, pk):
+    """
+    View to display the details of an email template.
+    """
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    
+    # Check permission
+    is_org_public = (template.organization and template.is_public and 
+                     hasattr(request.user, 'profile') and 
+                     request.user.profile.organization == template.organization)
+    
+    if not request.user.is_staff and template.user != request.user and not is_org_public:
+        messages.error(request, "You do not have permission to view this template.")
+        return redirect('template_list')
+    
+    context = {
+        'template': template
+    }
+    
+    return render(request, 'email_generator/template_detail.html', context)
+
+
+@login_required
+def abtest_list(request):
+    """
+    View to display the list of A/B test groups.
+    """
+    user = request.user
+    
+    # Get test groups based on user role
+    if user.is_staff and hasattr(user, 'profile') and user.profile.organization:
+        tests = ABTestGroup.objects.filter(organization=user.profile.organization).order_by('-created_at')
+    else:
+        tests = ABTestGroup.objects.filter(user=user).order_by('-created_at')
+    
+    context = {
+        'tests': tests
+    }
+    
+    return render(request, 'email_generator/abtest_list.html', context)
+
+
+@login_required
+def abtest_detail(request, pk):
+    """
+    View to display the details of an A/B test group.
+    """
+    test = get_object_or_404(ABTestGroup, pk=pk)
+    
+    # Check permission
+    if not request.user.is_staff and test.user != request.user:
+        messages.error(request, "You do not have permission to view this test.")
+        return redirect('abtest_list')
+    
+    # Get variants
+    variants = test.variants.all()
+    
+    context = {
+        'test': test,
+        'variants': variants
+    }
+    
+    return render(request, 'email_generator/abtest_detail.html', context)
