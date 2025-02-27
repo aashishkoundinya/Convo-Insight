@@ -12,7 +12,7 @@ from apps.email_generator.views import (
     GeneratedEmailViewSet, 
     ABTestViewSet
 )
-from apps.core.views import dashboard, profile
+from apps.core.views import dashboard, profile, test_login
 
 # Create a router and register our viewsets with it
 router = DefaultRouter()
@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),
     
+    path('test-login/', test_login, name='test_login'),
     # Authentication
     path('accounts/login/', RedirectView.as_view(url='/login/'), name='login_redirect'),
     path('login/', auth_views.LoginView.as_view(template_name='auth/login.html'), name='login'),

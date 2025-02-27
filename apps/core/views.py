@@ -2,12 +2,18 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
 from django.utils import timezone
+from django.http import HttpResponse
 from datetime import timedelta
 
 from apps.call_analyzer.models import CallRecording, SentimentAnalysis
 from apps.email_generator.models import GeneratedEmail, EmailAnalysis, ABTestGroup
 
 
+def test_login(request):
+    from django.contrib.auth import authenticate
+    user = authenticate(username='admin', password='password123')
+    return HttpResponse(f"Authentication result: {user is not None}")
+    
 @login_required
 def dashboard(request):
     """

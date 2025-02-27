@@ -69,15 +69,22 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': os.getenv('MONGO_DB_NAME', 'sales_assistant_db'),
+#         'CLIENT': {
+#             'host': os.getenv('MONGO_HOST', 'mongodb://localhost:27017/'),
+#             'username': os.getenv('MONGO_USERNAME', ''),
+#             'password': os.getenv('MONGO_PASSWORD', ''),
+#         }
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'djongo',
-        'NAME': os.getenv('MONGO_DB_NAME', 'sales_assistant_db'),
-        'CLIENT': {
-            'host': os.getenv('MONGO_HOST', 'mongodb://localhost:27017/'),
-            'username': os.getenv('MONGO_USERNAME', ''),
-            'password': os.getenv('MONGO_PASSWORD', ''),
-        }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -91,6 +98,10 @@ if mongo_user and mongo_pass:
     })
 
 LOGIN_URL = '/login/'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
