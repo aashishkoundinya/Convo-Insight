@@ -50,7 +50,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if hasattr call 'sentiment' %}
+                            {% if call.sentiment %}
                                 {% if call.sentiment.overall_sentiment == 'positive' %}
                                 <span class="text-success"><i class="fas fa-smile"></i> Positive</span>
                                 {% elif call.sentiment.overall_sentiment == 'negative' %}

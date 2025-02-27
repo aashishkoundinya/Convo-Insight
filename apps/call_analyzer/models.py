@@ -74,7 +74,9 @@ class CallSummary(TimeStampedModel):
     call_recording = models.OneToOneField(
         CallRecording, 
         on_delete=models.CASCADE, 
-        related_name='summary'
+        related_name='summary',
+        null=True,
+        blank=True
     )
     
     # Summary sections
@@ -95,7 +97,9 @@ class SentimentAnalysis(TimeStampedModel):
     call_recording = models.OneToOneField(
         CallRecording, 
         on_delete=models.CASCADE, 
-        related_name='sentiment'
+        related_name='sentiment',
+        null=True,
+        blank=True
     )
     
     # Overall sentiment scores
