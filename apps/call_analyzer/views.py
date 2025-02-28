@@ -13,6 +13,7 @@ import logging
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.db import models
 from django.contrib import messages
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
@@ -25,6 +26,7 @@ from .services.transcription import TranscriptionService
 from .services.sentiment import SentimentAnalysisService
 from .services.summarization import SummarizationService
 from .tasks import process_call_recording_async
+from apps.email_generator.models import EmailTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -323,3 +325,67 @@ def call_upload(request):
         return redirect('call_detail', pk=call.id)
     
     return render(request, 'call_analyzer/call_upload.html')
+
+
+@login_required
+def generate_email(request, pk):
+    """
+    View to generate an email based on a call recording.
+    """
+    call = get_object_or_404(CallRecording, pk=pk)
+    
+    # Check permission
+    if not request.user.is_staff and call.user != request.user:
+        messages.error(request, "You do not have permission to access this call.")
+        return redirect('call_list')
+    
+    # Check if call has been processed
+    if call.status != 'processed':
+        messages.error(request, "This call has not been fully processed yet.")
+        return redirect('call_detail', pk=pk)
+    
+    # Handle form submission
+    if request.method == 'POST':
+        tone = request.POST.get('tone', 'professional')
+        template_id = request.POST.get('template_id')
+        
+        # Get template if provided
+        template = None
+        if template_id:
+            template = get_object_or_404(EmailTemplate, id=template_id)
+        
+        # Generate the email
+        from apps.email_generator.services.generator import EmailGenerationService
+        service = EmailGenerationService()
+        email = service.generate_email(
+            call_recording=call,
+            tone=tone,
+            user=request.user,
+            organization=request.user.profile.organization if hasattr(request.user, 'profile') else None,
+            template=template
+        )
+        
+        if not email:
+            messages.error(request, "Failed to generate email. Please try again.")
+            return redirect('call_detail', pk=pk)
+        
+        # Start async analysis
+        from apps.email_generator.tasks import analyze_email_async
+        analyze_email_async.delay(email.id)
+        
+        messages.success(request, "Email generated successfully!")
+        return redirect('email_detail', pk=email.id)
+    
+    # Get available templates
+    from apps.email_generator.models import EmailTemplate
+    templates = EmailTemplate.objects.filter(
+        models.Q(user=request.user) | 
+        models.Q(organization=request.user.profile.organization, is_public=True) if hasattr(request.user, 'profile') and request.user.profile.organization else models.Q(user=request.user)
+    )
+    
+    context = {
+        'call': call,
+        'templates': templates,
+    }
+    
+    return render(request, 'call_analyzer/generate_email.html', context)

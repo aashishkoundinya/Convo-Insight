@@ -103,33 +103,38 @@ class SummarizationService:
             })
         
         return results
-    
+
     def _extract_key_elements(self, text: str) -> Dict[str, Any]:
         """
         Extract key elements from a call transcript using LLM.
-        
-        Args:
-            text: Call transcript text
-            
-        Returns:
-            Dictionary with key points, action items, etc.
         """
         model, tokenizer = self._load_model()
         
-        # Create a prompt for extracting structured information
+        # Create a clearer, more structured prompt
         prompt = f"""
-        Extract the following information from this sales call transcript:
+        You are an expert at analyzing sales call transcripts.
         
-        Transcript:
-        {text[:4000]}  # Truncate to avoid token limits
+        Below is a transcript from a sales call. Extract the following information in a clear, structured format:
+
+        TRANSCRIPT:
+        {text[:3000]}  # Truncated to avoid token limits
         
-        Please provide:
-        1. Key Points: Main discussion points
-        2. Action Items: Tasks that need follow-up
-        3. Questions: Important questions that came up
-        4. Objections: Customer concerns or objections
+        Format your response exactly like this example:
+        KEY POINTS:
+        - First key point about the conversation
+        - Second key point about the conversation
         
-        Format your response as JSON.
+        ACTION ITEMS:
+        - Action item 1
+        - Action item 2
+        
+        QUESTIONS:
+        - Question 1 asked during the call
+        - Question 2 asked during the call
+        
+        OBJECTIONS:
+        - Customer objection 1
+        - Customer objection 2
         """
         
         # Generate response
@@ -137,41 +142,44 @@ class SummarizationService:
             "text-generation",
             model=model,
             tokenizer=tokenizer,
-            max_length=1024
+            max_length=1024,
+            truncation=True
         )
         
         response = generation(prompt, max_length=1024, num_return_sequences=1)[0]['generated_text']
         
-        # The response might not be valid JSON, so we'll parse it manually
-        try:
-            # Try to find a JSON-like structure in the response
-            import json
-            import re
-            
-            # Look for content between curly braces
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                structured_data = json.loads(json_str)
-            else:
-                # Manual extraction as fallback
-                structured_data = {
-                    "key_points": self._extract_section(response, "Key Points"),
-                    "action_items": self._extract_section(response, "Action Items"),
-                    "questions": self._extract_section(response, "Questions"),
-                    "objections": self._extract_section(response, "Objections")
-                }
-        except Exception as e:
-            logger.error(f"Error parsing LLM response: {str(e)}")
-            # Fallback to manual extraction
-            structured_data = {
-                "key_points": self._extract_section(response, "Key Points"),
-                "action_items": self._extract_section(response, "Action Items"),
-                "questions": self._extract_section(response, "Questions"),
-                "objections": self._extract_section(response, "Objections")
-            }
+        # More robust extraction of sections using regular expressions
+        structured_data = {
+            "key_points": self._extract_list_items(response, "KEY POINTS"),
+            "action_items": self._extract_list_items(response, "ACTION ITEMS"),
+            "questions": self._extract_list_items(response, "QUESTIONS"),
+            "objections": self._extract_list_items(response, "OBJECTIONS")
+        }
         
         return structured_data
+
+    def _extract_list_items(self, text: str, section_name: str) -> List[str]:
+        """Extract list items from a section using more robust pattern matching."""
+        import re
+        
+        # Find the section - match everything after section_name: until the next section or end
+        pattern = f"{section_name}:(?:\s*\n)?(.*?)(?:\n\s*[A-Z ]+:|$)"
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+        
+        if not match:
+            return []
+        
+        section_text = match.group(1).strip()
+        
+        # Extract list items (bullet points or numbered items)
+        items = []
+        for line in section_text.split('\n'):
+            # Remove bullet points, numbers, etc.
+            clean_line = re.sub(r'^\s*[-•*\d]+\.?\s*', '', line).strip()
+            if clean_line and len(clean_line) > 3:  # Avoid empty or too short lines
+                items.append(clean_line)
+        
+        return items
     
     def _extract_section(self, text: str, section_name: str) -> List[str]:
         """Helper to extract list items from a section in the response."""

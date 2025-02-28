@@ -125,9 +125,55 @@ class EmailGenerationService:
         
         return prompt
     
+    # def _parse_response(self, response: str) -> Dict[str, str]:
+    #     """
+    #     Parse the LLM response to extract subject and body.
+        
+    #     Args:
+    #         response: LLM-generated text
+            
+    #     Returns:
+    #         Dictionary with 'subject' and 'body' keys
+    #     """
+    #     lines = response.strip().split('\n')
+        
+    #     subject = ""
+    #     body_lines = []
+    #     in_body = False
+        
+    #     for line in lines:
+    #         line = line.strip()
+            
+    #         # Check for subject line
+    #         if line.lower().startswith("subject:"):
+    #             subject = line[8:].strip()
+    #         elif "subject:" in line.lower() and not subject:
+    #             # Handle case where it's not at the start of the line
+    #             parts = line.lower().split("subject:")
+    #             subject = parts[1].strip()
+    #         # Everything after the subject is considered body
+    #         elif subject and not in_body:
+    #             in_body = True
+    #             if line:  # Skip empty line after subject
+    #                 body_lines.append(line)
+    #         elif in_body:
+    #             body_lines.append(line)
+        
+    #     # If we didn't find a subject but have body content, use the first line
+    #     if not subject and body_lines:
+    #         subject = body_lines[0]
+    #         body_lines = body_lines[1:]
+        
+    #     body = "\n".join(body_lines)
+        
+    #     return {
+    #         "subject": subject,
+    #         "body": body
+    #     }
+
     def _parse_response(self, response: str) -> Dict[str, str]:
         """
-        Parse the LLM response to extract subject and body.
+        Parse the LLM response to extract clean subject and body.
         
         Args:
             response: LLM-generated text
@@ -135,6 +181,33 @@ class EmailGenerationService:
         Returns:
             Dictionary with 'subject' and 'body' keys
         """
+        # List of patterns to remove
+        cleanup_patterns = [
+            # Remove code-like statements
+            r'# Define variables.*',
+            r'objections = \[.*\]',
+            r'customer_details = \[.*\]',
+            r'sentiment = .*',
+            r'cta = .*',
+            r'return .*',
+            r'print\(.*\)',
+            
+            # Remove placeholders
+            r'Dear \[.*?\]',
+            r'\[Your Name\]',
+            r'\[Company Name\]',
+            
+            # Remove debug-like lines
+            r'.*timezone\.now.*',
+            r'.*line = \[.*\]',
+        ]
+        
+        # Remove these patterns from the response
+        import re
+        for pattern in cleanup_patterns:
+            response = re.sub(pattern, '', response, flags=re.MULTILINE)
+        
+        # Split the response
         lines = response.strip().split('\n')
         
         subject = ""
@@ -144,27 +217,31 @@ class EmailGenerationService:
         for line in lines:
             line = line.strip()
             
+            # Skip empty or suspicious lines
+            if not line or line.startswith(('#', 'print', 'return')):
+                continue
+            
             # Check for subject line
             if line.lower().startswith("subject:"):
                 subject = line[8:].strip()
-            elif "subject:" in line.lower() and not subject:
-                # Handle case where it's not at the start of the line
-                parts = line.lower().split("subject:")
-                subject = parts[1].strip()
-            # Everything after the subject is considered body
-            elif subject and not in_body:
-                in_body = True
-                if line:  # Skip empty line after subject
-                    body_lines.append(line)
-            elif in_body:
+                continue
+            
+            # Collect body lines
+            if not subject:
+                subject = line
+            else:
                 body_lines.append(line)
         
-        # If we didn't find a subject but have body content, use the first line
-        if not subject and body_lines:
-            subject = body_lines[0]
-            body_lines = body_lines[1:]
+        # Clean up body
+        body = "\n".join(body_lines).strip()
         
-        body = "\n".join(body_lines)
+        # Fallback if body is empty
+        if not body:
+            body = "Thank you for our recent conversation. I wanted to follow up and discuss the key points we talked about."
+        
+        # Fallback if subject is empty
+        if not subject:
+            subject = "Follow-up from Our Recent Call"
         
         return {
             "subject": subject,

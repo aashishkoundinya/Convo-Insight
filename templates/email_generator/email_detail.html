@@ -67,7 +67,7 @@
                                 <td><span class="badge bg-secondary">{{ variant.get_tone_display }}</span></td>
                                 <td>{{ variant.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    {% if hasattr variant 'analysis' %}
+                                    {% if variant.analysis %}
                                     <div class="progress" style="height: 6px;">
                                         <div class="progress-bar 
                                             {% if variant.analysis.overall_score >= 80 %}

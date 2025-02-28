@@ -70,7 +70,7 @@
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ call.id }}">
                                     <li><a class="dropdown-item" href="{% url 'call_detail' call.id %}">View Details</a></li>
                                     {% if call.status == 'processed' %}
-                                    <li><a class="dropdown-item" href="#">Generate Email</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'generate_email' call.id %}">Generate Email</a></li>
                                     {% elif call.status == 'failed' %}
                                     <li>
                                         <form action="{% url 'process_call' call.id %}" method="post" class="d-inline">

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate Email from Call - Sales Communication Assistant{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+<li class="breadcrumb-item"><a href="{% url 'call_list' %}">Call Recordings</a></li>
+<li class="breadcrumb-item"><a href="{% url 'call_detail' call.id %}">{{ call.title }}</a></li>
+<li class="breadcrumb-item active" aria-current="page">Generate Email</li>
+{% endblock %}
+
+{% block page_title %}Generate Email from: {{ call.title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="tone" class="form-label">Email Tone</label>
+                <select class="form-select" id="tone" name="tone" required>
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="persuasive">Persuasive</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="formal">Formal</option>
+                    <option value="casual">Casual</option>
+                </select>
+                <div class="form-text">Choose the tone that best fits your recipient.</div>
+            </div>
+            
+            {% if templates %}
+            <div class="mb-3">
+                <label for="template_id" class="form-label">Email Template (Optional)</label>
+                <select class="form-select" id="template_id" name="template_id">
+                    <option value="">No template - generate from scratch</option>
+                    {% for template in templates %}
+                    <option value="{{ template.id }}">{{ template.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">You can use a template to provide structure for your email.</div>
+            </div>
+            {% endif %}
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                The system will generate an email based on the call insights, including the key points, questions, and objections identified in the call.
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'call_detail' call.id %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-envelope"></i> Generate Email
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

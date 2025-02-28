@@ -390,6 +390,30 @@ def email_detail(request, pk):
 
 
 @login_required
+def analyze_email_view(request, pk):
+    """
+    View to manually trigger analysis for an email.
+    """
+    email = get_object_or_404(GeneratedEmail, pk=pk)
+    
+    # Check permission
+    if not request.user.is_staff and email.user != request.user:
+        messages.error(request, "You do not have permission to analyze this email.")
+        return redirect('email_list')
+    
+    # Analyze the email
+    service = EmailAnalyzerService()
+    analysis = service.analyze_email(email)
+    
+    if analysis:
+        messages.success(request, "Email analysis completed successfully.")
+    else:
+        messages.error(request, "Failed to analyze email. Please try again.")
+    
+    return redirect('email_detail', pk=pk)
+
+
+@login_required
 def template_list(request):
     """
     View to display the list of email templates.
