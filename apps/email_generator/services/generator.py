@@ -124,52 +124,6 @@ class EmailGenerationService:
         """
         
         return prompt
-    
-    # def _parse_response(self, response: str) -> Dict[str, str]:
-    #     """
-    #     Parse the LLM response to extract subject and body.
-        
-    #     Args:
-    #         response: LLM-generated text
-            
-    #     Returns:
-    #         Dictionary with 'subject' and 'body' keys
-    #     """
-    #     lines = response.strip().split('\n')
-        
-    #     subject = ""
-    #     body_lines = []
-    #     in_body = False
-        
-    #     for line in lines:
-    #         line = line.strip()
-            
-    #         # Check for subject line
-    #         if line.lower().startswith("subject:"):
-    #             subject = line[8:].strip()
-    #         elif "subject:" in line.lower() and not subject:
-    #             # Handle case where it's not at the start of the line
-    #             parts = line.lower().split("subject:")
-    #             subject = parts[1].strip()
-    #         # Everything after the subject is considered body
-    #         elif subject and not in_body:
-    #             in_body = True
-    #             if line:  # Skip empty line after subject
-    #                 body_lines.append(line)
-    #         elif in_body:
-    #             body_lines.append(line)
-        
-    #     # If we didn't find a subject but have body content, use the first line
-    #     if not subject and body_lines:
-    #         subject = body_lines[0]
-    #         body_lines = body_lines[1:]
-        
-    #     body = "\n".join(body_lines)
-        
-    #     return {
-    #         "subject": subject,
-    #         "body": body
-    #     }
 
     def _parse_response(self, response: str) -> Dict[str, str]:
         """
@@ -181,59 +135,37 @@ class EmailGenerationService:
         Returns:
             Dictionary with 'subject' and 'body' keys
         """
-        # List of patterns to remove
+        import re
+        
+        # Remove everything before the actual email content
+        # Look for patterns that indicate the start of the actual email
+        clean_response = re.sub(r'.*SUBJECT:', '', response, flags=re.DOTALL).strip()
+        
+        # Split into subject and body
+        parts = clean_response.split('\n', 1)
+        
+        # Clean subject
+        subject = parts[0].strip()
+        
+        # Clean body
+        body = parts[1] if len(parts) > 1 else subject
+        
+        # Remove backend artifacts and code-like snippets
         cleanup_patterns = [
-            # Remove code-like statements
-            r'# Define variables.*',
-            r'objections = \[.*\]',
-            r'customer_details = \[.*\]',
-            r'sentiment = .*',
-            r'cta = .*',
-            r'return .*',
-            r'print\(.*\)',
-            
-            # Remove placeholders
-            r'Dear \[.*?\]',
-            r'\[Your Name\]',
-            r'\[Company Name\]',
-            
-            # Remove debug-like lines
-            r'.*timezone\.now.*',
-            r'.*line = \[.*\]',
+            r'\[.*?\]',  # Remove square bracket content
+            r'#.*',      # Remove comments
+            r'```.*?```',  # Remove code blocks
+            r'def .*',   # Remove function definitions
+            r'return .*',  # Remove return statements
+            r'print\(.*\)',  # Remove print statements
         ]
         
-        # Remove these patterns from the response
-        import re
         for pattern in cleanup_patterns:
-            response = re.sub(pattern, '', response, flags=re.MULTILINE)
-        
-        # Split the response
-        lines = response.strip().split('\n')
-        
-        subject = ""
-        body_lines = []
-        in_body = False
-        
-        for line in lines:
-            line = line.strip()
-            
-            # Skip empty or suspicious lines
-            if not line or line.startswith(('#', 'print', 'return')):
-                continue
-            
-            # Check for subject line
-            if line.lower().startswith("subject:"):
-                subject = line[8:].strip()
-                continue
-            
-            # Collect body lines
-            if not subject:
-                subject = line
-            else:
-                body_lines.append(line)
-        
-        # Clean up body
-        body = "\n".join(body_lines).strip()
+            body = re.sub(pattern, '', body, flags=re.MULTILINE | re.DOTALL)
+
+        # body = re.sub(r'\n{3,}', '\n\n', body)
+        body = re.sub(r'\n{3,}', '\n\n', body)
+        body = body.strip()
         
         # Fallback if body is empty
         if not body:

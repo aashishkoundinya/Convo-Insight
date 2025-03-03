@@ -164,7 +164,7 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # AI Service configuration
 WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'base')
-OPEN_SOURCE_LLM_MODEL = 'Qwen/Qwen2-0.5B-Instruct'  # Smaller 0.5B version
+OPEN_SOURCE_LLM_MODEL = 'Qwen/Qwen2-1.5B-Instruct'  # Smaller 0.5B version
 
 # File upload settings
 MAX_CALL_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
