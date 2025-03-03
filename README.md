@@ -16,16 +16,16 @@ This is an Call Analyzer and email generation platform, its a sales communicatio
 
 Last run on these versions
 
-    * MongoDB (v7.0.14)
-    * Django (v4.1.13)
-    * Python (v3.11.3)
-    * SQLite (v3.39.2)
-    * Celery (v5.4.0.14.1)
-    * Redis (v5.0.14.1)
+* MongoDB (v7.0.14)
+* Django (v4.1.13)
+* Python (v3.11.3)
+* SQLite (v3.39.2)
+* Celery (v5.4.0.14.1)
+* Redis (v5.0.14.1)
 
 Important
 
-    * CREATE a `.env file` in the root directory of the project and add all the relevant details needed for the project as per your system.
+* CREATE a `.env file` in the root directory of the project and add all the relevant details needed for the project as per your system.
 
 ## How it works
 
@@ -87,6 +87,7 @@ Important
 
 4. Database Setup
 
+    ```bash
     python manage.py makemigrations
     python manage.py migrate
     python manage.py createsuperuser
